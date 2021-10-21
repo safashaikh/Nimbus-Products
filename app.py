@@ -1,6 +1,5 @@
 from flask import Flask, Response, request, render_template, jsonify
 import database_services.RDBService as d_service
-from flask_cors import CORS
 import json
 
 import logging
@@ -51,11 +50,11 @@ def get_address_by_pid(pid):
 
         elif input.method == "PUT":
             data = input.data
-            res = ProductResource.update_by_template(data, {'ID': pid})
+            res = ProductResource.update_by_template(data, {'pid': pid})
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
 
         elif input.method == "DELETE":
-            res = ProductResource.delete_by_template({'ID': pid})
+            res = ProductResource.delete_by_template({'pid': pid})
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
 
         else:
