@@ -1,4 +1,6 @@
 from flask import Flask, Response, request, render_template, jsonify
+from flask_cors import CORS
+
 import database_services.RDBService as d_service
 import json
 
