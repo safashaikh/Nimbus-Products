@@ -1,30 +1,20 @@
 import os
-
-# This is a bad place for this import
 import pymysql
 
-def get_db_info():
-    """
-    This is crappy code.
-    :return: A dictionary with connect info for MySQL
-    """
-    db_host = os.environ.get("DBHOST", None)
-    db_user = os.environ.get("DBUSER", None)
-    db_password = os.environ.get("DBPASSWORD", None)
+# from Services.AddressService.address_service import AddressService as AddressService
+# from Services.UserService.user_service import UserService as UserService
 
-    if db_host is not None:
-        db_info = {
-            "host": db_host,
-            "user": db_user,
-            "password": db_password,
-            "cursorclass": pymysql.cursors.DictCursor
-        }
+context = {
+    "MAX_TABLE_ROWS_TO_PRINT": 10
+}
+
+
+def get_context_value(c_name=None):
+
+    if c_name is None:
+        result = context
     else:
-        db_info = {
-            "host": "localhost",
-            "user": "dbuser",
-            "password": "dbuserdbuser",
-            "cursorclass": pymysql.cursors.DictCursor
-        }
+        result = context.get(c_name)
 
-    return db_info
+    return result
+

@@ -42,6 +42,7 @@ class RESTContext:
         self.headers = dict(request.headers)
         self.method = request.method
         self.host_url = request.host_url
+        self.url = request.url
 
         self.path_parameters = path_parameters
 
@@ -89,6 +90,7 @@ class RESTContext:
             'offset': self.offset,
             'method': self.method,
             'host_url': self.host_url,
+            'url': self.url,
             'order_by': self.order_by,
             'fields': self.fields,
             'data': self.data}

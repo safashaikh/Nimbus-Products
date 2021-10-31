@@ -1,70 +1,104 @@
-from flask import Flask, Response, request, render_template, jsonify
+import json
+import logging
+
+from datetime import datetime
+
+from flask import Flask, Response
+from flask import request, render_template, jsonify
 from flask_cors import CORS
 
-import database_services.RDBService as d_service
-import json
-
-import logging
+from middleware.service_helper import _get_service_by_name, _generate_product_links, _generate_pages
 
 import utils.rest_utils as rest_utils
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-from application_services.ProductResource.product_service import ProductResource
-
-
+from pprint import pprint
 
 app = Flask(__name__)
 CORS(app)
 
 
 @app.route('/products', methods=["GET", "POST"])
-def get_addresses():
+def get_products():
     try:
-        input = rest_utils.RESTContext(request)
-        if input.method == "GET":
-            res = ProductResource.get_by_template(None)
-            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        inputs = rest_utils.RESTContext(request)
+        service = _get_service_by_name("product_service")
+        if service is not None:
+            if inputs.method == 'GET':
+                res, total_count = service.find_by_template(inputs.args, inputs.fields, inputs.limit, inputs.offset)
+                if res is not None:
+                    res = _generate_product_links(res)
+                    res = _generate_pages(res, inputs, total_count)
+                    res = json.dumps(res, default=str)
+                    rsp = Response(res, status=200, content_type='application/JSON')
+                else:
+                    rsp = Response("NOT FOUND", status=404, content_type='text/plain')
 
-        elif input.method == "POST":
-            data = input.data
-            res = ProductResource.add_by_template(data)
-            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            elif inputs.method == 'POST':
+                res = service.create(inputs.data)
+                if res is not None:
+                    values = list(map(str, res.values()))
+                    key = "_".join(values)
+                    headers = {"location": f"/users/{key}"}
+                    rsp = Response("CREATED", status=201, content_type='text/plain', headers=headers)
+                else:
+                    rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')
 
+            else:
+                rsp = Response("NOT IMPLEMENTED", status=501)
         else:
-            rsp = Response("Method not implemented", status=501)
+            rsp = Response("NOT FOUND", status=404, content_type='text/plain')
 
     except Exception as e:
-        print(f"Path: '/users', Error: {e}")
-        rsp = Response("INTERNAL ERROR", status=500, content_type="text/plain")
+        print(f"Path: /products\nException: {e}")
+        rsp = Response("INTERNAL ERROR", status=500, content_type='text/plain')
 
     return rsp
 
+
 @app.route('/products/<pid>', methods=["GET", "PUT", "DELETE"])
-def get_address_by_pid(pid):
+def get_products_by_pid(pid):
     try:
-        input = rest_utils.RESTContext(request)
-        if input.method == "GET":
-            res = ProductResource.get_by_template({'pid': pid})
-            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+        inputs= rest_utils.RESTContext(request)
+        service = _get_service_by_name("product_service")
+        if service is not None:
+            if inputs.method == 'GET':
+                args = {}
+                if inputs.args:
+                    args = inputs.args
+                args['pid'] = pid
 
-        elif input.method == "PUT":
-            data = input.data
-            res = ProductResource.update_by_template(data, {'pid': pid})
-            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+                res, total_count = service.find_by_template(args, inputs.fields) # single product (no limits/offset)
+                if res is not None:
+                    res = _generate_product_links(res)
+                    res = _generate_pages(res, inputs, total_count) # single product
+                    res = json.dumps(res, default = str)
+                    rsp = Response(res, status=200, content_type='application/JSON')
+                else:
+                    rsp = Response("NOT FOUND", status=404, content_type='text/plain')
 
-        elif input.method == "DELETE":
-            res = ProductResource.delete_by_template({'pid': pid})
-            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            elif inputs.method == 'PUT':
+                res = service.update(pid, inputs.data)
+                if res is not None:
+                    rsp = Response("OK", status=200, content_type='text/plain')
+                else:
+                    rsp = Response("NOT FOUND", status=404, content_type='text/plain')
+
+            elif inputs.method == 'DELETE':
+                res = service.delete({"pid": pid})
+                if res is not None:
+                    rsp = Response(f"Rows Deleted: {res['no_of_rows_deleted']}", status=204, content_type='text/plain')
+                else:
+                    rsp = Response("NOT FOUND", status=404, content_type='text/plain')
+
+            else:
+                rsp = Response("NOT IMPLEMENTED", status=501)
 
         else:
-            rsp = Response("Method not implemented", status=501)
+            rsp = Response("NOT FOUND", status=404, content_type='text/plain')
 
     except Exception as e:
-        print(f"Path: '/products/<pid>', Error: {e}")
-        rsp = Response("INTERNAL ERROR", status=500, content_type="text/plain")
+        print(f"Path: /products/<pid>\nException: {e}")
+        rsp = Response("INTERNAL ERROR", status=500, content_type='text/plain')
 
     return rsp
 
