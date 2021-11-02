@@ -38,7 +38,7 @@ def get_products():
                 if res is not None:
                     values = list(map(str, res.values()))
                     key = "_".join(values)
-                    headers = {"location": f"/users/{key}"}
+                    headers = {"location": f"/products/{key}"}
                     rsp = Response("CREATED", status=201, content_type='text/plain', headers=headers)
                 else:
                     rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')

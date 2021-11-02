@@ -268,7 +268,8 @@ class RDBDataTable:
             else:
                 vs.append("'"+v+"'")
 
-        q += "values(" + ', '.join(vs) + ")"
+        # q += "values(" + ', '.join(vs) + ")"
+        q += "values(" + ', '.join(list(map(str, vs))) + ")"
         cnx = self._cnx
         cursor = cnx.cursor()
         res = cursor.execute(q)
