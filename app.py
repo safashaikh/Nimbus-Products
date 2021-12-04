@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 import database_services.RDBService as d_service
 import json
+import boto3
 
 import logging
 
@@ -48,6 +49,26 @@ def get_address_by_pid(pid):
         input = rest_utils.RESTContext(request)
         if input.method == "GET":
             res = ProductResource.get_by_template({'pid': pid})
+            client = boto3.client('dynamodb')
+            review_res = client.get_item(
+                TableName="ProductReviews",
+                Key={
+                    "product_id": {
+                        "S": pid
+                    }
+                }
+            )  # Obtain the item from the dynamo table - particular product
+            reviews_list = review_res['Item']['reviews']['L']
+            reviews_list_filtered = []
+            string_to_search = request.args.get('stringsearch')
+            if string_to_search is None:
+                reviews_list_filtered = review_res['Item']['reviews']['L']
+            else:
+                for review in reviews_list:  # Filtering feature
+                    if string_to_search.lower() in review['M']['review']['S'].lower():  # filtering condition here
+                        reviews_list_filtered.append(review)
+            res.append(reviews_list_filtered)
+
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
 
         elif input.method == "PUT":
