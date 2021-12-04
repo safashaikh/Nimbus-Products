@@ -4,6 +4,7 @@ from flask_cors import CORS
 import database_services.RDBService as d_service
 import json
 import boto3
+import datetime
 
 import logging
 
@@ -49,6 +50,7 @@ def get_address_by_pid(pid):
         input = rest_utils.RESTContext(request)
         if input.method == "GET":
             res = ProductResource.get_by_template({'pid': pid})
+
             client = boto3.client('dynamodb')
             review_res = client.get_item(
                 TableName="ProductReviews",
@@ -73,6 +75,38 @@ def get_address_by_pid(pid):
 
         elif input.method == "PUT":
             data = input.data
+
+            new_review = request.form.get('review')
+            client = boto3.client('dynamodb')
+            review_res = client.get_item(
+                TableName="ProductReviews",
+                Key={
+                    "product_id": {
+                        "S": pid
+                    }
+                }
+            )
+            if new_review is not None:
+                result = client.update_item(
+                    TableName='ProductReviews',
+                    Key={
+                        'product_id': {
+                            'S': pid
+                        }
+                    },
+                    UpdateExpression='SET reviews = list_append(reviews, :i)',
+                    ExpressionAttributeValues={
+                        ':i': {
+                            'L': [{
+                                'M': {
+                                    'review_id': {'S': str(len(review_res['Item']['reviews']['L']) + 1)},
+                                    'datetime': {'S': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
+                                    'review': {'S': new_review}
+                                }
+                            }]
+                        }
+                    }
+                )
             res = ProductResource.update_by_template(data, {'pid': pid})
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
 
