@@ -44,6 +44,7 @@ def get_addresses():
 
     return rsp
 
+
 @app.route('/products/<pid>', methods=["GET", "PUT", "DELETE"])
 def get_address_by_pid(pid):
     try:
@@ -52,19 +53,20 @@ def get_address_by_pid(pid):
             res = ProductResource.get_by_template({'pid': pid})
 
             client = boto3.client('dynamodb')
-            review_res = client.get_item(
+            review_res = client.scan(
                 TableName="ProductReviews",
-                Key={
-                    "product_id": {
-                        "S": pid
+                ExpressionAttributeValues={
+                    ':p': {
+                        'S': pid
                     }
-                }
+                },
+                FilterExpression='product_id = :p'
             )  # Obtain the item from the dynamo table - particular product
-            reviews_list = review_res['Item']['reviews']['L']
+            reviews_list = review_res['Items'][0]['reviews']['L']
             reviews_list_filtered = []
             string_to_search = request.args.get('stringsearch')
             if string_to_search is None:
-                reviews_list_filtered = review_res['Item']['reviews']['L']
+                reviews_list_filtered = reviews_list
             else:
                 for review in reviews_list:  # Filtering feature
                     if string_to_search.lower() in review['M']['review']['S'].lower():  # filtering condition here
@@ -76,7 +78,7 @@ def get_address_by_pid(pid):
         elif input.method == "PUT":
             data = input.data
 
-            new_review = request.form.get('review')
+            new_review = request.form.get('review')  # Form contains the review
             client = boto3.client('dynamodb')
             review_res = client.get_item(
                 TableName="ProductReviews",
