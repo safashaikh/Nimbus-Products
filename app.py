@@ -71,7 +71,7 @@ def get_address_by_pid(pid):
                 for review in reviews_list:  # Filtering feature
                     if string_to_search.lower() in review['M']['review']['S'].lower():  # filtering condition here
                         reviews_list_filtered.append(review)
-            res.append(reviews_list_filtered)
+            res[0]['reviews'] = reviews_list_filtered
 
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
 
