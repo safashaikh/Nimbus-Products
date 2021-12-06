@@ -106,8 +106,12 @@ def get_address_by_pid(pid):
                                     'review': {'S': new_review}
                                 }
                             }]
+                        },
+                        ':size': {
+                            'N': str(len(review_res['Item']['reviews']['L']))
                         }
-                    }
+                    },
+                    ConditionExpression='size(reviews) = :size'
                 )
             res = ProductResource.update_by_template(data, {'pid': pid})
             rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
