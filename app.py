@@ -52,7 +52,7 @@ def get_address_by_pid(pid):
         if input.method == "GET":
             res = ProductResource.get_by_template({'pid': pid})
 
-            client = boto3.client('dynamodb')
+            client = boto3.client('dynamodb', region_name='us-east-1')
             review_res = client.scan(
                 TableName="ProductReviews",
                 ExpressionAttributeValues={
@@ -79,7 +79,7 @@ def get_address_by_pid(pid):
             data = input.data
 
             new_review = request.form.get('review')  # Form contains the review
-            client = boto3.client('dynamodb')
+            client = boto3.client('dynamodb', region_name='us-east-1')
             review_res = client.get_item(
                 TableName="ProductReviews",
                 Key={
